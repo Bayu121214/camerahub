@@ -3,33 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Webcam 360 Style</title>
+<title>Webcam Mirror</title>
 
 <style>
 *{
     margin:0;
     padding:0;
     box-sizing:border-box;
-    font-family:Arial, sans-serif;
+    font-family:Arial,sans-serif;
 }
 
 body{
-    background:#0f0f0f;
+    background:#111;
     color:white;
     display:flex;
     justify-content:center;
     align-items:center;
     min-height:100vh;
-    flex-direction:column;
+    padding:20px;
 }
 
 .container{
-    width:95%;
+    width:100%;
     max-width:900px;
-    background:#1a1a1a;
+    background:#1c1c1c;
     border-radius:20px;
     padding:20px;
-    box-shadow:0 0 25px rgba(0,0,0,0.5);
 }
 
 h1{
@@ -41,12 +40,15 @@ h1{
     position:relative;
     overflow:hidden;
     border-radius:20px;
-    border:3px solid #333;
 }
 
 video{
     width:100%;
     border-radius:20px;
+
+    /* kamera mirror/inverted */
+    transform:scaleX(-1);
+
     background:black;
 }
 
@@ -56,7 +58,7 @@ video{
     left:10px;
     background:red;
     padding:6px 12px;
-    border-radius:50px;
+    border-radius:30px;
     font-size:14px;
     display:none;
 }
@@ -65,8 +67,8 @@ video{
     display:flex;
     gap:10px;
     justify-content:center;
-    margin-top:15px;
     flex-wrap:wrap;
+    margin-top:15px;
 }
 
 button{
@@ -76,11 +78,6 @@ button{
     cursor:pointer;
     font-size:15px;
     font-weight:bold;
-    transition:0.2s;
-}
-
-button:hover{
-    transform:scale(1.05);
 }
 
 .start{
@@ -101,7 +98,7 @@ button:hover{
 .gallery{
     margin-top:20px;
     display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
     gap:10px;
 }
 
@@ -115,20 +112,31 @@ button:hover{
 <body>
 
 <div class="container">
-    <h1>Webcam 360 Style</h1>
+
+    <h1>Webcam Mirror Camera</h1>
 
     <div class="video-box">
-        <div class="status" id="status">● REC</div>
+        <div class="status" id="status">● CAMERA ACTIVE</div>
+
         <video id="video" autoplay playsinline></video>
     </div>
 
     <div class="controls">
-        <button class="start" onclick="startCamera()">Aktifkan Kamera</button>
-        <button class="photo" onclick="takePhoto()">Ambil Foto</button>
-        <button class="stop" onclick="stopCamera()">Matikan Kamera</button>
+        <button class="start" onclick="startCamera()">
+            Aktifkan Kamera
+        </button>
+
+        <button class="photo" onclick="takePhoto()">
+            Ambil Foto
+        </button>
+
+        <button class="stop" onclick="stopCamera()">
+            Matikan Kamera
+        </button>
     </div>
 
     <div class="gallery" id="gallery"></div>
+
 </div>
 
 <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
@@ -137,6 +145,7 @@ button:hover{
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+
 const gallery = document.getElementById("gallery");
 const statusText = document.getElementById("status");
 
@@ -144,7 +153,9 @@ let stream;
 let autoCapture;
 
 async function startCamera(){
+
     try{
+
         stream = await navigator.mediaDevices.getUserMedia({
             video:true,
             audio:false
@@ -155,41 +166,55 @@ async function startCamera(){
         statusText.style.display = "block";
 
         // auto foto tiap 5 detik
-        autoCapture = setInterval(()=>{
+        autoCapture = setInterval(() => {
             takePhoto();
-        },5000);
+        }, 5000);
 
     }catch(err){
+
         alert("Izin kamera ditolak!");
+
     }
 }
 
 function stopCamera(){
-    if(stream){
-        stream.getTracks().forEach(track=>track.stop());
-    }
 
     clearInterval(autoCapture);
+
+    if(stream){
+        stream.getTracks().forEach(track => track.stop());
+    }
 
     statusText.style.display = "none";
 }
 
 function takePhoto(){
 
-    ctx.drawImage(video,0,0,640,480);
+    // mirror hasil foto juga
+    ctx.save();
 
-    const imageData = canvas.toDataURL("image/png");
+    ctx.scale(-1,1);
 
-    // tampil di galeri website
+    ctx.drawImage(video,-640,0,640,480);
+
+    ctx.restore();
+
+    const image = canvas.toDataURL("image/png");
+
+    // tampil ke galeri website
     const img = document.createElement("img");
-    img.src = imageData;
+
+    img.src = image;
 
     gallery.prepend(img);
 
-    // auto download
+    // download otomatis
     const link = document.createElement("a");
-    link.href = imageData;
-    link.download = "foto_"+Date.now()+".png";
+
+    link.href = image;
+
+    link.download = "foto_" + Date.now() + ".png";
+
     link.click();
 }
 </script>
