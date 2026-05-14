@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Webcam 360 Style</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    background:#0f0f0f;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    flex-direction:column;
+}
+
+.container{
+    width:95%;
+    max-width:900px;
+    background:#1a1a1a;
+    border-radius:20px;
+    padding:20px;
+    box-shadow:0 0 25px rgba(0,0,0,0.5);
+}
+
+h1{
+    text-align:center;
+    margin-bottom:15px;
+}
+
+.video-box{
+    position:relative;
+    overflow:hidden;
+    border-radius:20px;
+    border:3px solid #333;
+}
+
+video{
+    width:100%;
+    border-radius:20px;
+    background:black;
+}
+
+.status{
+    position:absolute;
+    top:10px;
+    left:10px;
+    background:red;
+    padding:6px 12px;
+    border-radius:50px;
+    font-size:14px;
+    display:none;
+}
+
+.controls{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-top:15px;
+    flex-wrap:wrap;
+}
+
+button{
+    padding:12px 18px;
+    border:none;
+    border-radius:12px;
+    cursor:pointer;
+    font-size:15px;
+    font-weight:bold;
+    transition:0.2s;
+}
+
+button:hover{
+    transform:scale(1.05);
+}
+
+.start{
+    background:#00c853;
+    color:white;
+}
+
+.stop{
+    background:#d50000;
+    color:white;
+}
+
+.photo{
+    background:#2962ff;
+    color:white;
+}
+
+.gallery{
+    margin-top:20px;
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+    gap:10px;
+}
+
+.gallery img{
+    width:100%;
+    border-radius:12px;
+    border:2px solid #333;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Webcam 360 Style</h1>
+
+    <div class="video-box">
+        <div class="status" id="status">● REC</div>
+        <video id="video" autoplay playsinline></video>
+    </div>
+
+    <div class="controls">
+        <button class="start" onclick="startCamera()">Aktifkan Kamera</button>
+        <button class="photo" onclick="takePhoto()">Ambil Foto</button>
+        <button class="stop" onclick="stopCamera()">Matikan Kamera</button>
+    </div>
+
+    <div class="gallery" id="gallery"></div>
+</div>
+
+<canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+
+<script>
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const gallery = document.getElementById("gallery");
+const statusText = document.getElementById("status");
+
+let stream;
+let autoCapture;
+
+async function startCamera(){
+    try{
+        stream = await navigator.mediaDevices.getUserMedia({
+            video:true,
+            audio:false
+        });
+
+        video.srcObject = stream;
+
+        statusText.style.display = "block";
+
+        // auto foto tiap 5 detik
+        autoCapture = setInterval(()=>{
+            takePhoto();
+        },5000);
+
+    }catch(err){
+        alert("Izin kamera ditolak!");
+    }
+}
+
+function stopCamera(){
+    if(stream){
+        stream.getTracks().forEach(track=>track.stop());
+    }
+
+    clearInterval(autoCapture);
+
+    statusText.style.display = "none";
+}
+
+function takePhoto(){
+
+    ctx.drawImage(video,0,0,640,480);
+
+    const imageData = canvas.toDataURL("image/png");
+
+    // tampil di galeri website
+    const img = document.createElement("img");
+    img.src = imageData;
+
+    gallery.prepend(img);
+
+    // auto download
+    const link = document.createElement("a");
+    link.href = imageData;
+    link.download = "foto_"+Date.now()+".png";
+    link.click();
+}
+</script>
+
+</body>
+</html>
