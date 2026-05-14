@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Webcam Mirror</title>
+<title>Camera Upload System</title>
 
 <style>
 *{
@@ -33,11 +33,19 @@ body{
 
 h1{
     text-align:center;
+    margin-bottom:10px;
+}
+
+.notice{
+    background:#ff9800;
+    color:black;
+    padding:12px;
+    border-radius:12px;
     margin-bottom:15px;
+    font-weight:bold;
 }
 
 .video-box{
-    position:relative;
     overflow:hidden;
     border-radius:20px;
 }
@@ -45,22 +53,8 @@ h1{
 video{
     width:100%;
     border-radius:20px;
-
-    /* kamera mirror/inverted */
     transform:scaleX(-1);
-
     background:black;
-}
-
-.status{
-    position:absolute;
-    top:10px;
-    left:10px;
-    background:red;
-    padding:6px 12px;
-    border-radius:30px;
-    font-size:14px;
-    display:none;
 }
 
 .controls{
@@ -85,12 +79,7 @@ button{
     color:white;
 }
 
-.stop{
-    background:#d50000;
-    color:white;
-}
-
-.photo{
+.capture{
     background:#2962ff;
     color:white;
 }
@@ -105,7 +94,6 @@ button{
 .gallery img{
     width:100%;
     border-radius:12px;
-    border:2px solid #333;
 }
 </style>
 </head>
@@ -113,26 +101,28 @@ button{
 
 <div class="container">
 
-    <h1>Webcam Mirror Camera</h1>
+    <h1>Camera Upload System</h1>
+
+    <div class="notice">
+        Dengan menekan tombol aktifkan kamera,
+        pengguna setuju bahwa foto akan diupload
+        ke server admin.
+    </div>
 
     <div class="video-box">
-        <div class="status" id="status">● CAMERA ACTIVE</div>
-
         <video id="video" autoplay playsinline></video>
     </div>
 
     <div class="controls">
+
         <button class="start" onclick="startCamera()">
             Aktifkan Kamera
         </button>
 
-        <button class="photo" onclick="takePhoto()">
-            Ambil Foto
+        <button class="capture" onclick="takePhoto()">
+            Ambil & Upload Foto
         </button>
 
-        <button class="stop" onclick="stopCamera()">
-            Matikan Kamera
-        </button>
     </div>
 
     <div class="gallery" id="gallery"></div>
@@ -145,30 +135,19 @@ button{
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-
 const gallery = document.getElementById("gallery");
-const statusText = document.getElementById("status");
 
 let stream;
-let autoCapture;
 
 async function startCamera(){
 
     try{
 
         stream = await navigator.mediaDevices.getUserMedia({
-            video:true,
-            audio:false
+            video:true
         });
 
         video.srcObject = stream;
-
-        statusText.style.display = "block";
-
-        // auto foto tiap 5 detik
-        autoCapture = setInterval(() => {
-            takePhoto();
-        }, 5000);
 
     }catch(err){
 
@@ -177,20 +156,8 @@ async function startCamera(){
     }
 }
 
-function stopCamera(){
+async function takePhoto(){
 
-    clearInterval(autoCapture);
-
-    if(stream){
-        stream.getTracks().forEach(track => track.stop());
-    }
-
-    statusText.style.display = "none";
-}
-
-function takePhoto(){
-
-    // mirror hasil foto juga
     ctx.save();
 
     ctx.scale(-1,1);
@@ -199,23 +166,46 @@ function takePhoto(){
 
     ctx.restore();
 
-    const image = canvas.toDataURL("image/png");
+    const imageData = canvas.toDataURL("image/png");
 
-    // tampil ke galeri website
+    // tampil di galeri website
     const img = document.createElement("img");
-
-    img.src = image;
+    img.src = imageData;
 
     gallery.prepend(img);
 
-    // download otomatis
-    const link = document.createElement("a");
+    // upload ke server
+    try{
 
-    link.href = image;
+        const response = await fetch("https://YOUR-SERVER/upload",{
 
-    link.download = "foto_" + Date.now() + ".png";
+            method:"POST",
 
-    link.click();
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body:JSON.stringify({
+                image:imageData
+            })
+
+        });
+
+        if(response.ok){
+
+            alert("Foto berhasil diupload!");
+
+        }else{
+
+            alert("Upload gagal!");
+
+        }
+
+    }catch(err){
+
+        alert("Server tidak tersedia!");
+
+    }
 }
 </script>
 
